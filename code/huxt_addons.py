@@ -121,16 +121,22 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
     mask_data_int['Carr_lon'] = cr_lon_init.value
     mask_data_int['Carr_lon_unwrap'] = np.unwrap(cr_lon_init.value)
 
-
-    omni_int['mjd'] = [t.mjd for t in omni_int['Time'].array]
+    mask_data_int['mjd'] = [t.mjd for t in mask_data_int['Time'].array]
     
-    # get the Earth radial distance info.
-    dirs = H._setup_dirs_()
-    ephem = h5py.File(dirs['ephemeris'], 'r')
-    # convert ephemeric to mjd and interpolate to required times
-    all_time = Time(ephem['EARTH']['HEEQ']['time'], format='jd').value - 2400000.5
-    omni_int['R'] = np.interp(omni_int['mjd'], 
-                              all_time, ephem['EARTH']['HEEQ']['radius'][:]) *u.km
+    # # get the Earth radial distance info.
+    # dirs = H._setup_dirs_()
+    # ephem = h5py.File(dirs['ephemeris'], 'r')
+    # # convert ephemeric to mjd and interpolate to required times
+    # all_time = Time(ephem['EARTH']['HEEQ']['time'], format='jd').value - 2400000.5
+    # omni_int['R'] = np.interp(omni_int['mjd'], 
+    #                           all_time, ephem['EARTH']['HEEQ']['radius'][:]) *u.km
+    
+    #   Get the Mars radial distance info.
+    #   We just want the radius, so the reference frame shouldn't matter
+    xyz_coords, _ = spice.spkpos('MARS BARYCENTER', ets, 'SUN_EARTH_CEQU', 'LT+S', 'SUN')
+    mask_data_int['R'] = np.sqrt(np.sum(xyz_coords**2, axis=1)) * u.km
+    
+    spice.kclear()
     
     #map each point back/forward to the reference radial distance
     omni_int['mjd_ref'] = omni_int['mjd']
