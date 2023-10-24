@@ -29,8 +29,8 @@ import requests
 import huxt as H
 
 
-def generate_vCarr_from_OMNI(runstart, runend, nlon_grid=128, dt=1*u.day, 
-                             ref_r = 215*u.solRad, corot_type = 'both'):
+def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day, 
+                             ref_r = 329*u.solRad, corot_type = 'both'):
     """
     A function to download OMNI data and generate V_carr and time_grid
     for use with set_time_dependent_boundary
@@ -51,26 +51,25 @@ def generate_vCarr_from_OMNI(runstart, runend, nlon_grid=128, dt=1*u.day,
     #check the coro_type is one of he accepted values
     assert corot_type == 'both' or corot_type == 'back' or corot_type == 'forward'
 
-    # download an additional 28 days either side
+    #   MJR 20231023: I think this is (partially) to allow easier mapping to Carr. longitude later on, so I'm leaving it
     starttime = runstart - datetime.timedelta(days=28)
     endtime = runend + datetime.timedelta(days=28)
     
-    # Download the 1hr OMNI data from CDAweb
-    trange = attrs.Time(starttime, endtime)
-    dataset = attrs.cdaweb.Dataset('OMNI2_H0_MRG1HR')
-    result = Fido.search(trange, dataset)
-    downloaded_files = Fido.fetch(result)
-
-    # Import the OMNI data
-    omni = TimeSeries(downloaded_files, concatenate=True)
-    data = omni.to_dataframe()
+    #   Read in the VSWUM 1 hr data from file
+    filepath = '/Users/mrutala/projects/HUXt-DIAS-Mars-Prop/data/Hour2014-2020.csv'
+    cols_to_use = ['date_[utc]', 'mu_b_x_SW', 'sigma_b_x_SW', 'mu_v_mag_SW', 'sigma_v_mag_SW']
     
+    vswum = pd.read_csv(filepath)
+    data = vswum[cols_to_use].copy()
+    data.rename(columns={'mu_v_mag_SW':'V', 'mu_b_x_SW':'Bx'}, inplace=True)
+    
+    #   MJR 20231023: Shouldn't be needed if there's no bad data in VSWUM,,,
     # # Set invalid data points to NaN
-    id_bad = data['V'] == 9999.0
-    data.loc[id_bad, 'V'] = np.NaN
+    #id_bad = data['V'] == 9999.0
+    #data.loc[id_bad, 'V'] = np.NaN
     
     # create a datetime column
-    data['datetime'] = data.index.to_pydatetime()
+    data['datetime'] = pd.to_datetime(data['date_[utc]'], format='%Y-%m-%d %H:%M:%S')
 
     # compute the syndoic rotation period
     daysec = 24 * 60 * 60 * u.s
