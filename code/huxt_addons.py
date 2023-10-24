@@ -139,19 +139,24 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
     spice.kclear()
     
     #map each point back/forward to the reference radial distance
-    omni_int['mjd_ref'] = omni_int['mjd']
-    omni_int['Carr_lon_ref'] = omni_int['Carr_lon_unwrap']
-    for t in range(0, len(omni_int)):
+    mask_data_int['mjd_ref'] = mask_data_int['mjd']
+    mask_data_int['Carr_lon_ref'] = mask_data_int['Carr_lon_unwrap']
+    #for t in range(0, len(mask_data_int)):
+    for t, row in mask_data_int.iterrows():
         #time lag to reference radius
-        delta_r = (ref_r.to(u.km) - omni_int['R'][t]).value
-        delta_t = delta_r/omni_int['V'][t]/24/60/60
-        omni_int['mjd_ref'][t] = omni_int['mjd_ref'][t]  + delta_t
+        delta_r = (ref_r.to(u.km) - row['R']*u.km).value  #  MJR: Don't know why *u.km needs to be added...
+        delta_t = delta_r/row['V']/24/60/60
+        mask_data_int.at[t, 'mjd_ref'] = row['mjd_ref'] + delta_t
         #change in Carr long of the measurement
-        omni_int['Carr_lon_ref'][t] =  omni_int['Carr_lon_ref'][t] - \
+        
+        #   MJR 20231023: !!!! Need to think about this more carefully
+        #   Reference Carrington Longitude is already calculated taking light travel time into account
+        #   Here, we're taking plasma travel time into account (effectively) (I think)
+        mask_data_int.at[t, 'Carr_lon_ref'] = row['Carr_lon_ref'] - \
             delta_t *daysec * 2 * np.pi /synodic_period
     
     #  Fix R to non-astropy, unitless values for compatibility
-    omni_int['R'] = omni_int['R'].to_numpy('float64')
+    mask_data_int['R'] = mask_data_int['R'].to_numpy('float64')
     
     #sort the omni data by Carr_lon_ref for interpolation
     omni_temp = omni_int.copy()
