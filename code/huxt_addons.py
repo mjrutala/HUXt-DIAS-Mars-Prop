@@ -91,7 +91,11 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
     #   MJR 20231023: Input data is complete, and shouldn't need interpolation
     #   But I'm leaving it in case we want to interpolate through error-prone
     #   windows in the future
+    #   Maybe with a "bad_data_value" optional input?
     # interpolate through OMNI V data gaps
+    # # Set invalid data points to NaN
+    # id_bad = data['V'] == 9999.0
+    # data.loc[id_bad, 'V'] = np.NaN
     # omni_int = omni.interpolate(method='linear', axis=0).ffill().bfill()
     # del omni
     
@@ -99,13 +103,24 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
     del mask_data
     
     # compute carrington longitudes
-    cr = np.ones(len(omni_int))
-    cr_lon_init = np.ones(len(omni_int))*u.rad
-    for i in range(0, len(omni_int)):
-        cr[i], cr_lon_init[i] = datetime2huxtinputs(omni_int['datetime'][i])
+    # cr = np.ones(len(mask_data_int))
+    # cr_lon_init = np.ones(len(mask_data_int))*u.rad
+    # for i in range(0, len(omni_int)):
+    #     cr[i], cr_lon_init[i] = datetime2huxtinputs(omni_int['datetime'][i])
 
-    omni_int['Carr_lon'] = cr_lon_init.value
-    omni_int['Carr_lon_unwrap'] = np.unwrap(omni_int['Carr_lon'].to_numpy())
+    import spiceypy as spice
+    spice.furnsh('/Users/mrutala/projects/HUXt-DIAS-Mars-Prop/data/SPICE/generic/metakernel_HUXt_planetary.txt')
+    
+    #   Only keep the surface coordinates from spice.subpnt()
+    #   NB This does *not* give CR #, but we shouldn't need it here
+    ets = spice.datetime2et(mask_data_int['datetime'])
+    xyz_coords = [spice.subpnt('NEAR POINT/ELLIPSOID', 'SUN', et, 'IAU_SUN', 'LT+S', 'MARS BARYCENTER')[0] for et in ets]
+    rlonlat_coords = np.array([spice.reclat(xyz) for xyz in xyz_coords])
+    cr_lon_init = rlonlat_coords[:,1]*u.rad
+    
+    mask_data_int['Carr_lon'] = cr_lon_init.value
+    mask_data_int['Carr_lon_unwrap'] = np.unwrap(cr_lon_init.value)
+
 
     omni_int['mjd'] = [t.mjd for t in omni_int['Time'].array]
     
