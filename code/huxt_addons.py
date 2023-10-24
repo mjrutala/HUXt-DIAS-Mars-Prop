@@ -185,30 +185,29 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
 
     for t in range(0, len(time_grid)):
         # find nearest time and current Carrington longitude
-        t_id = np.argmin(np.abs(omni_int['mjd'] - time_grid[t]))
-        Elong = omni_int['Carr_lon'][t_id] * u.rad
+        t_id = np.argmin(np.abs(mask_data_int['mjd'] - time_grid[t]))
+        Elong = mask_data_int['Carr_lon'][t_id] * u.rad
         
         # get the Carrington longitude difference from current Earth pos
-        dlong_back = _zerototwopi_(lon_grid.value - Elong.value) * u.rad
-        dlong_forward = _zerototwopi_(Elong.value - lon_grid.value) * u.rad
+        dlong_back = H._zerototwopi_(lon_grid.value - Elong.value) * u.rad
+        dlong_forward = H._zerototwopi_(Elong.value - lon_grid.value) * u.rad
         
         dt_back = (dlong_back / omega_synodic).to(u.day)
         dt_forward = (dlong_forward / omega_synodic).to(u.day)
         
-        vgrid_carr_recon_back[:, t] = np.interp(time_grid[t] - dt_back.value, omni_int['mjd'], omni_int['V_ref'],
+        vgrid_carr_recon_back[:, t] = np.interp(time_grid[t] - dt_back.value, mask_data_int['mjd'], mask_data_int['V_ref'],
                                                 left=np.nan, right=np.nan)
-        bgrid_carr_recon_back[:, t] = np.interp(time_grid[t] - dt_back.value, omni_int['mjd'], omni_int['Br_ref'],
+        bgrid_carr_recon_back[:, t] = np.interp(time_grid[t] - dt_back.value, mask_data_int['mjd'], mask_data_int['Br_ref'],
                                                 left=np.nan, right=np.nan)
-        
         # if ((time_grid[t] >= Time(runstart).mjd) & (time_grid[t] <= Time(runend).mjd)):
         #     import matplotlib.pyplot as plt
         #     plt.plot(time_grid[t] - dt_back.value)
-        #     plt.plot(omni_int['mjd'])
-        #     return time_grid[t] - dt_back.value, omni_int['mjd'], omni_int['V_ref'], vgrid_carr_recon_back[:, t]
+        #     plt.plot(mask_data_int['mjd'])
+        #     return time_grid[t] - dt_back.value, mask_data_int['mjd'], mask_data_int['V_ref'], vgrid_carr_recon_back[:, t]      
 
-        vgrid_carr_recon_forward[:, t] = np.interp(time_grid[t] + dt_forward.value, omni_int['mjd'], omni_int['V_ref'],
+        vgrid_carr_recon_forward[:, t] = np.interp(time_grid[t] + dt_forward.value, mask_data_int['mjd'], mask_data_int['V_ref'],
                                                    left=np.nan, right=np.nan)
-        bgrid_carr_recon_forward[:, t] = np.interp(time_grid[t] + dt_forward.value, omni_int['mjd'], omni_int['Br_ref'],
+        bgrid_carr_recon_forward[:, t] = np.interp(time_grid[t] + dt_forward.value, mask_data_int['mjd'], mask_data_int['Br_ref'],
                                                    left=np.nan, right=np.nan)
 
         numerator = (dt_forward * vgrid_carr_recon_back[:, t] + dt_back * vgrid_carr_recon_forward[:, t])
