@@ -26,8 +26,9 @@ from sunpy.net import attrs
 from sunpy.timeseries import TimeSeries
 import requests
 
+import sys
+sys.path.append('/Users/mrutala/projects/HUXt-DIAS/code/')
 import huxt as H
-
 
 def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day, 
                              ref_r = 329*u.solRad, corot_type = 'both'):
@@ -199,7 +200,7 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
                                                 left=np.nan, right=np.nan)
         bgrid_carr_recon_back[:, t] = np.interp(time_grid[t] - dt_back.value, mask_data_int['mjd'], mask_data_int['Br_ref'],
                                                 left=np.nan, right=np.nan)
-        # if ((time_grid[t] >= Time(runstart).mjd) & (time_grid[t] <= Time(runend).mjd)):
+        # if ((tCime_grid[t] >= Time(runstart).mjd) & (time_grid[t] <= Time(runend).mjd)):
         #     import matplotlib.pyplot as plt
         #     plt.plot(time_grid[t] - dt_back.value)
         #     plt.plot(mask_data_int['mjd'])
