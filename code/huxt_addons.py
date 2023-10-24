@@ -159,14 +159,15 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
     mask_data_int['R'] = mask_data_int['R'].to_numpy('float64')
     
     #sort the omni data by Carr_lon_ref for interpolation
-    omni_temp = omni_int.copy()
-    omni_temp = omni_temp.sort_values(by = ['Carr_lon_ref'])
+    # Why?
+    mask_data_temp = mask_data_int.copy()
+    mask_data_temp = mask_data_temp.sort_values(by = ['Carr_lon_ref'])
     
     # now remap these speeds back on to the original time steps
-    omni_int['V_ref'] = np.interp(omni_int['Carr_lon_unwrap'], omni_temp['Carr_lon_ref'],
-                                  omni_temp['V'])
-    omni_int['Br_ref'] = np.interp(omni_int['Carr_lon_unwrap'], omni_temp['Carr_lon_ref'],
-                                  -omni_temp['BX_GSE'])
+    mask_data_int['V_ref'] = np.interp(mask_data_int['Carr_lon_unwrap'], mask_data_temp['Carr_lon_ref'],
+                                  mask_data_temp['V'])
+    mask_data_int['Br_ref'] = np.interp(mask_data_int['Carr_lon_unwrap'], mask_data_temp['Carr_lon_ref'],
+                                  -mask_data_temp['Bx'])
 
     # compute the longitudinal and time grids
     dphi_grid = 360/nlon_grid
