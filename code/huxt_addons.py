@@ -231,7 +231,8 @@ def generate_vCarr_from_VSWUM(runstart, runend, nlon_grid=128, dt=1*u.day,
     
     
 def generate_vCarr_from_CSV(csv, runstart, runend, nlon_grid=128, dt=1*u.day, 
-                             ref_r = 329*u.solRad, corot_type = 'both'):
+                             ref_r = 329*u.solRad, corot_type = 'both', 
+                             origin="Earth"):
     """
     A function to generate V_carr and time_grid from a CSV of date, u_r, B_x, 
     for use with set_time_dependent_boundary
@@ -255,29 +256,35 @@ def generate_vCarr_from_CSV(csv, runstart, runend, nlon_grid=128, dt=1*u.day,
     #   MJR 20231023: I think this is (partially) to allow easier mapping to Carr. longitude later on, so I'm leaving it
     starttime = runstart - datetime.timedelta(days=28)
     endtime = runend + datetime.timedelta(days=28)
+    if (starttime < csv.index[0]) or (endtime > csv.index[-1]):
+        print("Input DataFrame does not have sufficient padding before runstart or after runend."+
+              "28 (Earth) days of padding currently required.")
+        return
     
-    #   Read in the VSWUM 1 hr data from file
-    filepath = '/Users/mrutala/projects/HUXt-DIAS-Mars-Prop/data/Hour2014-2020.csv'
-    cols_to_use = ['date_[utc]', 'mu_b_x_SW', 'sigma_b_x_SW', 'mu_v_mag_SW', 'sigma_v_mag_SW']
+    # #   Read in the VSWUM 1 hr data from file
+    # filepath = '/Users/mrutala/projects/HUXt-DIAS-Mars-Prop/data/Hour2014-2020.csv'
+    # cols_to_use = ['date_[utc]', 'mu_b_x_SW', 'sigma_b_x_SW', 'mu_v_mag_SW', 'sigma_v_mag_SW']
     
-    vswum = pd.read_csv(filepath)
-    data = vswum[cols_to_use].copy()
-    data.rename(columns={'mu_v_mag_SW':'V', 'mu_b_x_SW':'Bx'}, inplace=True)
+    # vswum = pd.read_csv(filepath)
+    # data = vswum[cols_to_use].copy()
+    # data.rename(columns={'mu_v_mag_SW':'V', 'mu_b_x_SW':'Bx'}, inplace=True)
     
-    #   MJR 20231023: Shouldn't be needed if there's no bad data in VSWUM,,,
-    # # Set invalid data points to NaN
-    #id_bad = data['V'] == 9999.0
-    #data.loc[id_bad, 'V'] = np.NaN
+    # #   MJR 20231023: Shouldn't be needed if there's no bad data in VSWUM,,,
+    # # # Set invalid data points to NaN
+    # #id_bad = data['V'] == 9999.0
+    # #data.loc[id_bad, 'V'] = np.NaN
     
-    # create a datetime column
-    data['datetime'] = pd.to_datetime(data['date_[utc]'], format='%Y-%m-%d %H:%M:%S')
+    # # create a datetime column
+    # data['datetime'] = pd.to_datetime(data['date_[utc]'], format='%Y-%m-%d %H:%M:%S')
 
-    #   !!!! Do we need to adjust this for Mars synodic period? i.e., longer day?
     # compute the synodic rotation period
+    #  Should be 27.2753 at Earth and 26.3536 at Mars
     daysec = 24 * 60 * 60 * u.s
-    # synodic_period = 27.2753 * daysec  # Solar Synodic rotation period from Earth.
-    synodic_period = 26.32 * daysec  # Solar Synodic rotation period from Mars
-    omega_synodic = 2*np.pi * u.rad / synodic_period
+    sidereal_years = {'Earth':  365.25,
+                      'Mars':   686.98}
+    sidereal_solar_period = 25.38
+    synodic_solar_period = sidereal_years[origin] * sidereal_solar_period / (sidereal_years[origin] - sidereal_solar_period)
+    omega_synodic = 2*np.pi * u.rad / (synodic_solar_period * daysec)
 
     # find the period of interest
     mask = ((data['datetime'] > starttime) &
