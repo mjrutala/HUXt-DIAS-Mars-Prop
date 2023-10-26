@@ -280,8 +280,9 @@ def generate_vCarr_from_CSV(csv, runstart, runend, nlon_grid=128, dt=1*u.day,
     # compute the synodic rotation period
     #  Should be 27.2753 at Earth and 26.3536 at Mars
     daysec = 24 * 60 * 60 * u.s
-    sidereal_years = {'Earth':  365.25,
-                      'Mars':   686.98}
+    sidereal_years = {'Mercury':     87.97,
+                      'Earth':      365.25,
+                      'Mars':       686.98}
     sidereal_solar_period = 25.38
     synodic_solar_period = sidereal_years[origin] * sidereal_solar_period / (sidereal_years[origin] - sidereal_solar_period)
     omega_synodic = 2*np.pi * u.rad / (synodic_solar_period * daysec)
