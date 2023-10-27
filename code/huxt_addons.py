@@ -326,6 +326,8 @@ def generate_vCarr_from_df(df, runstart, runend, nlon_grid=128, dt=1*u.day,
     # omni_int['R'] = np.interp(omni_int['mjd'], 
     #                           all_time, ephem['EARTH']['HEEQ']['radius'][:]) *u.km
 
+    #   !!!! Separate this code out into a standalone function, so that it can be called external to HUXt to get r/lon/lat
+    #   Useful for Mars especially, which changes significant in r and so we want multiple separate runs
     import spiceypy as spice
     dirs = H._setup_dirs_()
     spice.furnsh(dirs['spice'] + '/metakernel_HUXt_planetary.txt')
