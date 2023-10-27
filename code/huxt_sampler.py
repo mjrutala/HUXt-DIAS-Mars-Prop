@@ -29,7 +29,7 @@ def vSWUM_Sampler():
     runend = dt.datetime(2016, 6, 20)
     simtime = (runend-runstart).days * u.day
     r_min = 329 * u.solRad  #  Average Mars orbital distance-- 
-    #  !!!! change dynamically with Mars location
+    #  !!!! change above dynamically with Mars location
 
     #   Read in the full VSWUM 1 hr data from file
     cols_to_use = ['date_[utc]', 'mu_b_x_SW', 'sigma_b_x_SW', 'mu_v_mag_SW', 'sigma_v_mag_SW']
