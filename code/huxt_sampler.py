@@ -28,7 +28,8 @@ def vSWUM_Sampler():
     runstart = dt.datetime(2016, 6, 15)
     runend = dt.datetime(2016, 6, 20)
     simtime = (runend-runstart).days * u.day
-    r_min = 329 * u.solRad  #  Average Mars orbital distance-- change dynamically with Mars location
+    r_min = 329 * u.solRad  #  Average Mars orbital distance-- 
+    #  !!!! change dynamically with Mars location
 
     #   Read in the full VSWUM 1 hr data from file
     cols_to_use = ['date_[utc]', 'mu_b_x_SW', 'sigma_b_x_SW', 'mu_v_mag_SW', 'sigma_v_mag_SW']
@@ -47,12 +48,9 @@ def vSWUM_Sampler():
     # =============================================================================
     #   Sampler
     # =============================================================================
-    # sub_data = data.copy()
-    # sub_data.rename(columns={'mu_v_mag_SW':'V', 'mu_b_x_SW':'Bx'}, inplace=True)
-    
     seed = 19950612  #  For reproducability
     generator = np.random.default_rng(seed)
-    n = 500
+    n = 1000
     
     vcarr_list = []
     for i in range(n):
@@ -63,24 +61,49 @@ def vSWUM_Sampler():
         
         vcarr_list.append(vcarr[:,0])
         if i % 10 == 0: print(i)
-        
+    
+    #   Get nominal vSWUM output
+    sub_data = data.copy()    
     sub_data['V'] = sub_data['mu_v_mag_SW']
     sub_data['Bx'] = sub_data['mu_b_x_SW']
     time0, vcarr0, bcarr0 = H_ad.generate_vCarr_from_df(sub_data, runstart, runend, ref_r=r_min, origin='Mars')
     
     time1, vcarr1, bcarr1 = Hin.generate_vCarr_from_OMNI(runstart, runend)
     
-    fig, ax = plt.subplots(figsize=(8,6))
-    for row in vcarr_list:
-        ax.plot(np.arange(0, 128)*(360/128.), row, alpha = 1/100., color='blue')
+    def fig1():
+        fig, axs = plt.subplots(ncols=2, figsize=(8,6))
+        plt.subplots_adjust(left=0.15, bottom=0.15, right=0.95, top=0.90, wspace=0.2)
         
-    ax.plot(np.arange(0, 128)*(360/128.), vcarr0[:,0], color='red')
-    ax.plot(np.arange(0, 128)*(360/128.), vcarr1[:,0], color='gold')
-    
-    ax.set_xticks([0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330])
+        lon = np.arange(0, 128)*(360/128.)
+        axs[0].plot(lon, vcarr1[:,0], color='gold', label='OMNI @ Earth')
+        axs[0].plot(lon, vcarr0[:,0], color='xkcd:navy blue', label='Nominal vSWUM @ Mars')
+        axs[0].fill_between(lon, 
+                            np.percentile(np.array(vcarr_list), 10, axis=0), 
+                            np.percentile(np.array(vcarr_list), 90, axis=0),
+                            color='xkcd:navy blue', alpha=0.5, label=r'10$^{th}$/90$^{th}$ percentile')
+        axs[0].legend(loc='best', bbox_to_anchor=[0.5, 0.5, 0.5, 0.5], fontsize=8)
+        axs[0].annotate('(a)', (0, 1), (1, -1), xycoords='axes fraction', 
+                        textcoords='offset points', ha='left', va='top')
+        axs[0].set(xlabel='Carrington Longitude [deg.]', xticks=[0, 90, 180, 270, 360],
+                   ylabel=r'Solar Wind Flow Speed ($U_{mag}$) [km/s]')
+                   
+        sigmas = np.std(np.array(vcarr_list), axis=1)
+        axs[1].hist(sigmas, bins=np.arange(55, 70+0.05, 0.05), 
+                    color='xkcd:navy blue', alpha = 0.5, label='All Samples')
+        axs[1].axvline(np.std(vcarr[:,0]), 
+                       color='xkcd:navy blue', label='Nominal vSWUM @ Mars')
         
+        axs[1].legend(loc='best', bbox_to_anchor=[0.5, 0.5, 0.5, 0.5], fontsize=8)
+        axs[1].annotate('(b)', (0, 1), (1, -1), xycoords='axes fraction', 
+                        textcoords='offset points', ha='left', va='top')
+        axs[1].set(xlabel='$\sigma_{U_{mag}}$ [km/s]', 
+                   ylabel='# of Samples')
+        
+        fig.suptitle(r'$n = {}$'.format(n))
+        
+        plt.show()
+    fig1()    
     
-    plt.show()
     
     return vcarr_list
    
